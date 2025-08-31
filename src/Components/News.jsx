@@ -13,13 +13,16 @@ export default class News extends Component {
     };
   }
 
-  // Correct async method syntax inside class
   fetchNews = async (page) => {
     try {
       if (this.props.loadingBar) this.props.loadingBar.current.continuousStart();
       this.setState({ loading: true });
 
-      let url = `${this.props.apiUrl}&page=${page}&pageSize=${this.state.pageSize}`;
+      // If searchQuery exists, use it; otherwise default API URL
+      let url = this.props.searchQuery
+        ? `https://newsapi.org/v2/everything?q=${encodeURIComponent(this.props.searchQuery)}&apiKey=f6943d3d905d48bdb7889b5680e52469&page=${page}&pageSize=${this.state.pageSize}`
+        : `${this.props.apiUrl}&page=${page}&pageSize=${this.state.pageSize}`;
+
       let response = await fetch(url);
       let parsedData = await response.json();
 
@@ -43,7 +46,8 @@ export default class News extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.apiUrl !== this.props.apiUrl) {
+    // Refetch news if API URL or search query changes
+    if (prevProps.apiUrl !== this.props.apiUrl || prevProps.searchQuery !== this.props.searchQuery) {
       this.fetchNews(1);
     }
   }
@@ -64,7 +68,9 @@ export default class News extends Component {
 
     return (
       <div className="container my-4">
-        <h1 className="mb-4">The NewsHub - Top Headlines</h1>
+        <h1 className="mb-4">
+          {this.props.searchQuery ? `Search results for "${this.props.searchQuery}"` : "The NewsHub - Top Headlines"}
+        </h1>
 
         {loading && (
           <div className="text-center my-5">
@@ -75,9 +81,7 @@ export default class News extends Component {
         )}
 
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          {!loading && articles.length === 0 && (
-            <p className="text-center">No news articles found.</p>
-          )}
+          {!loading && articles.length === 0 && <p className="text-center">No news articles found.</p>}
 
           {articles.map((element, index) => (
             <div className="col" key={index}>
@@ -92,23 +96,9 @@ export default class News extends Component {
         </div>
 
         <div className="d-flex justify-content-between my-4">
-          <button
-            disabled={page <= 1}
-            className="btn btn-dark"
-            onClick={this.handlePrevClick}
-          >
-            &larr; Previous
-          </button>
-          <span className="align-self-center">
-            Page {page} of {maxPage}
-          </span>
-          <button
-            disabled={page >= maxPage}
-            className="btn btn-dark"
-            onClick={this.handleNextClick}
-          >
-            Next &rarr;
-          </button>
+          <button disabled={page <= 1} className="btn btn-dark" onClick={this.handlePrevClick}>&larr; Previous</button>
+          <span className="align-self-center">Page {page} of {maxPage}</span>
+          <button disabled={page >= maxPage} className="btn btn-dark" onClick={this.handleNextClick}>Next &rarr;</button>
         </div>
       </div>
     );
